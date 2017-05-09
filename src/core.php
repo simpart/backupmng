@@ -1,6 +1,6 @@
 <?php
 
-function execBackup($cnf) {
+function execBackup($cnf, $tm) {
     try {
         if ( (0 !== strcmp($cnf['src']['type'], 'dir')) ||
              (0 !== strcmp($cnf['dest']['type'], 'dir')) ) {
@@ -22,7 +22,7 @@ function execBackup($cnf) {
                            'prikey'   => '/root/.ssh/id_rsa'
                        )
                    );
-        $tmp_nm  = time() . '_' . $cnf['name'] . '.tar.gz';
+        $tmp_nm  = $tm . '_' . $cnf['name'] . '.tar.gz';
         $cmd_str = 'tar zcvf /tmp/' . $tmp_nm . ' ' . $src['path'];
         /* create compress file */
         $src_ssh->execute($cmd_str);
@@ -50,7 +50,7 @@ function execBackup($cnf) {
                            'prikey'   => '/root/.ssh/id_rsa'
                        )
                    );
-        $dst_scp->upload('/tmp/' . $tmp_nm, $dest['path'] . $tmp_nm);
+        $dst_scp->upload('/tmp/' . $tmp_nm, $dest['path'] . '/' . $tmp_nm);
         
         /* remove local temp file */
         shell_exec('rm -rf /tmp/' . $tmp_nm);
@@ -108,7 +108,7 @@ function generation ($cnf, $dest) {
                 }
             }
             /* delete oldest file */
-            $dst_cli->execute('rm -rf ' . $dest['path'] . $oldest[0] . '_' . $cnf['name'] . '.tar.gz');
+            $dst_cli->execute('rm -rf ' . $dest['path'] . '/' . $oldest[0] . '_' . $cnf['name'] . '.tar.gz');
             $stamps[$oldest[1]] = null;
         }
     } catch (Exception $e) {

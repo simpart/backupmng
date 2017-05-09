@@ -6,55 +6,35 @@ $g_conf_idx = 0;
 define('D_CONF_DIR', __DIR__ . '/../conf');
 
 try {
-    # load config
-    while (null !== ($conf = readConf())) {
-        # check exec backup
-        if (true !== isExecConf($conf)) {
+    /* load config file */
+    $conf = \ttr\dir\getFiles(D_CONF_DIR);
+    foreach ($conf as $cnf_elm) {
+        
+        /* get config */
+        $yml_cnf = yaml_parse_file($cnf_elm);
+        if (false === $yml_cnf) {
+            throw new Exception('invalid config');
+        }
+        
+        /* check interval */
+        if (true !== isExecConf($yml_cnf)) {
             continue;
         }
-        execBackup($conf);
         
-        # record log
-        time();
+        /* execute backup */
+        $tm = time();
+        execBackup($yml_cnf, $tm);
+        
+        /* record log */
+        $yml_cnf['last_backup'] = $tm;
+        if (false === yaml_emit_file($cnf_elm, $yml_cnf)) {
+            throw new Exception('failed record log');
+        }
     }
-    
-    # record log
-    //time();
-    
 } catch (Exception $e) {
     echo $e->getMessage() . PHP_EOL;
 }
 
-
-function readConf () {
-    try {
-        global $g_conf_idx;
-        
-        $conts  = scandir(D_CONF_DIR);
-        $hitcnt = 0;
-        foreach ($conts as $elm) {
-            $elm_pth = D_CONF_DIR . DIRECTORY_SEPARATOR . $elm;
-            $ctype = filetype($elm_pth);
-            if (0 !== strcmp('file', $ctype)) {
-                continue;
-            }
-            $hitcnt++;
-            if ($g_conf_idx < $hitcnt) {
-                $g_conf_idx = $hitcnt;
-                return yaml_parse_file($elm_pth);
-            }
-        }
-        return null;
-    } catch (Exception $e) {
-        throw new Exception(
-                   PHP_EOL .
-                   'File:' . __FILE__     . ',' .
-                   'Line:' . __line__     . ',' .
-                   'Func:' . __FUNCTION__ . ',' .
-                   $e->getMessage()
-              );
-    }
-}
 
 function isExecConf($conf) {
     try {
